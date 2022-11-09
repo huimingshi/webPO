@@ -8,9 +8,13 @@ from commom.BasePage import BasePage
 from configs.project_settings import *
 import time
 from pageEle.loginPageEle import *
+from pageEle.publicPageEle import *
 
 
 # 定义一个装饰器，当打开citron时出现WebDriverException：ERR_NAME_NOT_RESOLVED时进行截图
+
+
+
 def ERR_NAME_NOT_RESOLVED(func):
     def inner(self,driver, *args, **kwargs):
         try:

@@ -9,22 +9,15 @@ import traceback
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from configs.project_settings import *
-from utils.handle_path import current_project_path
-import sys
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
+from pageEle.publicPageEle import close_tutorial_button
+from utils.handle_system_type import get_system_type
+
 
 class BasePage(object):
-    def get_system_type(self):
-        """
-        # get current system type
-        # Windows or Mac
-        :return: system type
-        """
-        system_type = platform.system()
-        print(system_type)
-        return system_type
-
     def kill_all_browser(self):
-        system_type = self.get_system_type()
+        system_type = get_system_type()
         if system_type == 'Windows':
             if SMALL_RANGE_BROWSER_TYPE == 'Chrome':
                 # kill所有的chromedriver进程
@@ -70,7 +63,7 @@ class BasePage(object):
 
     def screen_shot_func(self,driver, screen_name):
         current_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(time.time()))
-        sys_type = self.get_system_type()
+        sys_type = get_system_type()
         if sys_type == 'Windows':
             driver.save_screenshot('.\\' + current_time + screen_name + 'screenshot.png')
         else:
@@ -154,33 +147,6 @@ class BasePage(object):
                 self.screen_shot_func(driver, description)
                 raise Exception
 
-    def get_picture_path(self,picture_name='avatar1.jpg'):
-        """
-        # 获取avatar1.jpg绝对路径
-        :return: avatar1.jpg绝对路径
-        """
-        dir_path = os.path.dirname(os.path.abspath(__file__))
-        print('当前目录绝对路径:', dir_path)
-        system_type = self.get_system_type()
-        if system_type == 'Windows':
-            dir_list = dir_path.split('\\')
-            print(dir_list)
-            dir_list[-1] = 'publicData'
-            join_str = '\\\\'
-            final_path = join_str.join(dir_list)
-            modify_picture_path = final_path + f'\\\\{picture_name}'
-            return modify_picture_path
-        else:
-            dir_list = dir_path.split('/')
-            print(dir_list)
-            dir_list[-1] = 'publicData'
-            join_str = '//'
-            final_path = join_str.join(dir_list)
-            print(final_path)
-            modify_picture_path = final_path + f'//{picture_name}'
-            print(modify_picture_path)
-            return modify_picture_path
-
     def public_assert(self,driver, string1, string2, condition='=', action=None):
         """
         公共的断言方法
@@ -208,6 +174,45 @@ class BasePage(object):
             self.screen_shot_func(driver, action)
             raise AssertionError
 
+    def paste_on_a_non_windows_system(self,driver, paste_xpath):
+        """
+        非windows系统上粘贴
+        :param driver:
+        :param paste_xpath:需要进行粘贴的元素的xpath
+        :return:
+        """
+        ele = self.get_xpath_element(driver, paste_xpath, description='非Windows操作系统粘贴')
+        actions = ActionChains(driver)
+        actions.move_to_element(ele)
+        actions.click(ele)  # select the element where to paste text
+        actions.key_down(Keys.META)
+        actions.send_keys('v')
+        actions.key_up(Keys.META)
+        actions.perform()
 
-def add_to_pythonpath():
-    sys.path.insert(0, current_project_path)
+    def refresh_browser_page(self,driver, close_tutorial='close_tutorial'):
+        """
+        刷新浏览器的某个页面
+        :param driver:
+        :param close_tutorial: 是否关闭导航页面；默认关闭
+        :return:
+        """
+        driver.refresh()
+        if close_tutorial == 'close_tutorial':
+            self.close_tutorial_action(driver)
+
+    def close_tutorial_action(self,driver):
+        """
+        关闭导航页面
+        :param driver:
+        :return:
+        """
+        for i in range(3):
+            ele_list = self.get_xpath_elements(driver, close_tutorial_button)
+            if len(ele_list) == 1:
+                self.public_click_element(driver, close_tutorial_button, description='close_tutorial按钮')
+                break
+            elif i == 2:
+                self.public_assert(driver, len(ele_list), 1, action='关闭导航页面未出现')
+            else:
+                time.sleep(10)
